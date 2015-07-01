@@ -1,0 +1,22 @@
+[
+{
+    "zipcode"   : "94402",
+    "lenders"  : ["Prospect Mortgage", "Wells fargo", "Guarantee Mortgage"]
+},
+{
+    "zipcode"   : "95050",
+    "lenders"  : ["Loan Mortgage LLC", "Patelco Credit Union", "The Loan Story"]
+},
+{
+    "zipcode"   : "95051",
+    "lenders"  : ["Prospect Mortgage", "Wells fargo", "Guarantee Mortgage"]
+},
+{
+    "zipcode"   : "95052",
+    "lenders"  : ["Mortgage Magic", "California Capital Mortgage"]
+},
+{
+    "zipcode"   : "95101",
+    "lenders"  : ["Western Bancorp", "Plaza Loans", "Prospect Mortgage", "C2 Financial Corporation", "Arcus Lending"]
+}
+]

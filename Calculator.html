@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+    <style>
+        body {
+            color:#000;
+            background-color:#EBD6CC;
+        }
+        #wrapper{
+            border:1px solid #000;
+            width:850px;
+            margin:0 auto;
+            background-color: rosybrown;
+        }
+        #header {
+            height:220px;
+            background-image: url(loancalc.jpg);
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+        #container {
+            height:460px;
+            padding:15px;
+        }
+        .top {
+            vertical-align: top;
+        }
+    </style>
+
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+        <script type="text/javascript">
+
+            //Function that allows only numbers and decimals(based on the flag) to type in.
+            function checkNumbers(event,flag) {
+                document.getElementById('amount').style.color = "black";
+                document.getElementById('interest').style.color = "black";
+                document.getElementById('period').style.color = "black";
+                var charCode = event.keyCode;
+                if ((flag==true &&  (charCode==8 || charCode==190)) || (flag==false && charCode==8)){
+                    return true;
+                }
+                if ((charCode < 48 || charCode > 57)){
+                    return false;
+                }
+                return true;
+            }
+
+            //Checks if the user has entered valid data in the fields.
+            //Displays error messages for invalid data
+            //Proceeds to calculate the loan payments only if the values entered are valid
+            function calculate() {
+                document.getElementById('lenders').innerHTML = "";
+                document.getElementById('monthlyPayments').innerHTML = "";
+                document.getElementById('totalPayments').innerHTML = "";
+                document.getElementById('totalInterest').innerHTML = "";
+                document.getElementById('container').style.height = "460px";
+                if (validate()) {
+                    var amountFlag = checkDecimal(document.getElementById('amount').value);
+                    if (!amountFlag) {
+                        document.getElementById('amount').style.color = "red";
+                    }
+                    var interestFlag = checkDecimal(document.getElementById('interest').value);
+                    if (!interestFlag) {
+                        document.getElementById('interest').style.color = "red";
+                    }
+                    var periodFlag = checkDecimal(document.getElementById('period').value);
+                    if (!periodFlag) {
+                        document.getElementById('period').style.color = "red";
+                    }
+                    if (amountFlag && interestFlag && periodFlag) {
+                        document.getElementById('error').innerHTML = "&nbsp;";
+                        calculatePayments();
+                        var zipcode = document.getElementById('zipcode').value;
+                        if (zipcode != "") {
+                            getLenders(zipcode);
+                        }
+                    }
+                    else {
+                        displayError("Please enter valid data");
+                    }
+                }
+            }
+
+            //Checks if the user has entered all the mandatory fields
+            function validate(){
+                if (document.getElementById('amount').value == "") {
+                    displayError("The Amount field is mandatory");
+                    return false;
+                }
+                if (document.getElementById('interest').value == "") {
+                    displayError("The Annual Interest field is mandatory");
+                    return false;
+                }
+                if (document.getElementById('period').value == "") {
+                    displayError("The Repayment period field is mandatory");
+                    return false;
+                }
+                if (!document.getElementById('zipcode').value.length == 0 ) {
+                    if (document.getElementById('zipcode').value.length != 5){
+                        displayError("Please enter a valid zip code");
+                        return false;
+                    }
+                }
+                return true;
+            }
+
+            //Displays error messages
+            function displayError(message) {
+                document.getElementById('error').innerHTML = message;
+                document.getElementById('error').style.color = "red";
+            }
+
+            //Checks if the decimal number if entered is valid
+            function checkDecimal(number){
+                var split = number.toString().split('.');
+                if(split.length > 2) {
+                    return false;
+                }
+                return true;
+            }
+
+            //Calculates the loam payments and calls the function to draw graph
+            function calculatePayments(){
+                var monthly = document.getElementById('monthlyPayments');
+                var totalPayment = document.getElementById('totalPayments');
+                var totalInterest = document.getElementById('totalInterest');
+                var amount = parseFloat(document.getElementById('amount').value);
+                var rate = parseFloat(document.getElementById('interest').value);
+                var period = parseFloat(document.getElementById('period').value);
+                var ratePerMonth = rate /100 / 12;
+                var months = period * 12;
+                var x = Math.pow(1+ratePerMonth , months);
+                var monthlyPayment = (amount*ratePerMonth*x)/(x-1);
+                monthly.innerHTML = monthlyPayment.toFixed(2);
+                var total  = (monthlyPayment * months).toFixed(2);
+                totalPayment.innerHTML = total;
+                totalInterest.innerHTML = ((monthlyPayment * months) - amount).toFixed(2);
+                drawGraph(period,amount,total);
+            }
+
+            //Draws the graph based on the values calculated
+            function drawGraph(period,amount,interest) {
+                var c = document.getElementById('graph');
+                var l = c.getContext("2d");
+                l.clearRect(0, 0, 500, 350);
+                l.beginPath();
+                l.moveTo(40, 10);
+                l.lineTo(40, 320);
+                l.lineTo(480, 320);
+                l.linewidth = 15;
+                l.strokeStyle = "black";
+                l.font="10px Verdana";
+                l.fillStyle = "black";
+                l.stroke();
+                l.closePath();
+
+                var plottingXDistance = calculateXPosition(period);
+                var xInterval = plottingXDistance[1];
+                var xunit = plottingXDistance[0];
+                var index = 0, y = 0;
+                for (var i = 0; index <= period; i++) {
+                    y += xInterval;
+                    if (period <= 10) {
+                        index += 1;
+                        l.fillRect(y,319,2,5);
+                        l.fillText(index, y, 340);
+                    }
+                    else {
+                        index += 5;
+                        l.fillRect(y,319,1,3);
+                        l.fillText(index, y, 340);
+                    }
+                }
+
+                var plottingYDistance = calculateYPosition(interest);
+                var yInterval = plottingYDistance[1];
+                var yunit = plottingYDistance[0];
+                index = 0;
+                var x = 320;
+                for (var i = 0; index <= interest; i++) {
+                    x -= yInterval;
+                    if (interest <= 3000) {
+                        index += 500;
+                        l.fillRect(38,x,5,2);
+                        l.fillText(index, 5, x);
+                    }
+                    else {
+                        index += 1000;
+                        l.fillRect(38,x,5,2);
+                        l.fillText(index, 5, x);
+                    }
+                }
+
+                //Draw line for loan balance
+                l.beginPath();
+                l.moveTo(40,(320 - (amount*yunit)));
+                l.lineTo((period*xunit),320);
+                l.linewidth = 40;
+                l.strokeStyle = "#94E994";
+                l.font="12px Verdana";
+                l.fillStyle = "#94E994";
+                l.fillText('Loan Balance', 60,20);
+                l.stroke();
+                l.closePath();
+
+                //Draw line for interest Payments
+                l.beginPath();
+                l.moveTo(40,320);
+                l.lineTo(period*xunit,(320-(interest*yunit)));
+                l.linewidth = 40;
+                l.strokeStyle = "#FFFF75";
+                l.fillStyle = "#FFFF75";
+
+                l.fillText("Interest Payment", 60,40);
+                l.stroke();
+                l.closePath();
+            }
+
+            //Calculates the intervals to be plotted on the graph's X-axis
+            function calculateXPosition(value){
+                if (value <= 10) {
+                    var xInterval = Math.round((480 / value));
+                    var xunit = xInterval;
+                }
+                else {
+                    var divisor = ((Math.round(value / 5))+1);
+                    xInterval = Math.round((480 / divisor));
+                    xunit = xInterval/5;
+                }
+                var plottingXDistance = [xunit,xInterval];
+                return plottingXDistance;
+            }
+
+            //Calculates the intervals to be plotted on the graph's Y-axis
+            function calculateYPosition(value) {
+                if (value <= 3000) {
+                    var divisor = ((Math.round(value / 500))+1);
+                    var yInterval = Math.round((310/divisor));
+                    var yunit = yInterval/500;
+                }
+                else {
+                    divisor = ((Math.round(value / 1000))+1);
+                    yInterval = Math.round((310/divisor));
+                    yunit = yInterval/1000;
+                }
+                var plottingYDistance = [yunit,yInterval];
+                return plottingYDistance;
+            }
+
+            //Initiates an ajax call to get the lenders data based on the zipcode
+            function getLenders(value){
+                $.ajax({
+                    url:"lenders.txt",
+                    dataType: "json",
+                    success: function(data){
+                        var $content = "";
+                        $(data).each(function(index) {
+                            var $code = this.zipcode;
+                            if ($code == value) {
+                                $content = this.lenders;
+                                buildData($content);
+                            }
+                        })
+                        if ($content == ""){
+                            $("#lenders").html("<p>Sorry!!There are no lenders in this zip code</p>");
+                        }
+                    },
+                    error: function(){
+                        alert("Could not load content")
+                    }
+                })
+            }
+
+            //Builds the list of lenders fetched from the ajax call and loads into the HTML element
+            function buildData(value){
+                var length = value.length;
+                var height = $('#container').height() ;
+                var newHeight = height+(length*20)+'px';
+                document.getElementById('container').style.height =  newHeight;
+                var data = "";
+                for (var i =0; i < length; i++) {
+                    data += '<li>'+ value[i] + '</li>';
+                }
+                $('#lenders').html("<ul>" + data + "</ul>");
+            }
+
+        </script>
+    </head>
+    <body>
+    <div id = "wrapper">
+        <div id = "header">
+        </div>
+    <div id="container" style="overflow:auto">
+        <hr>
+        <table>
+            <tr><span id="error">&nbsp;</span></tr>
+            <tr>
+                <th>Enter Loan Data:</th>
+                <td></td>
+                <th>Loan Balance, Cumulative Equity and Interest Payments</th>
+            </tr>
+            <tr>
+                <td>Amount of the Loan($):</td>
+                <td><input type="text" id="amount" onkeydown="return checkNumbers(event,true)" ></td>
+                <td rowspan="8"><canvas id="graph" height="350" width="500" style=" float:left; border: 1px solid"></canvas></td>
+            </tr>
+            <tr>
+                <td>Annual interest (%): </td>
+                <td><input type="text" id="interest" onkeydown="return checkNumbers(event,true)"></td>
+            </tr>
+            <tr>
+                <td>Repayment period(years):</td>
+                <td><input type="text" id="period" onkeydown="return checkNumbers(event,true)"></td>
+            </tr>
+            <tr>
+                <td>Zipcode(to find lenders):</td>
+                <td><input tyep="text" id="zipcode" onkeydown="return checkNumbers(event,false)"></td>
+            </tr>
+            <tr>
+                <th>Approximate Payments:</th>
+                <td><button onclick="calculate()">Calculate</button></td>
+            </tr>
+            <tr>
+                <td>Monthly Payments:</td>
+                <td>$<span id="monthlyPayments"></span></td>
+            </tr>
+            <tr>
+                <td>Total Payment:</td>
+                <td>$<span id="totalPayments"></span></td>
+            </tr>
+            <tr>
+                <td>Total interest:</td>
+                <td>$<span id="totalInterest"></span></td>
+            </tr>
+            <tr>
+                <th class="top">Sponsors:</th>
+                <td colspan=2> Apply for your loan with one of these fine lenders:
+                    <div id="lenders"></div></td>
+            </tr>
+        </table>
+    </div>
+    </div>
+    </body>
+    </html>
